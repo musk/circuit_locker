@@ -24,7 +24,7 @@
 #define uint unsigned int
 #define ulong unsigned long
 
-#define LOCK_GLYPH 0
+#define LOCK_GLYPH   0
 #define UNLOCK_GLYPH 1
 
 byte lockGlyph[8] = {
@@ -61,103 +61,10 @@ LiquidCrystal lcd(RS_PIN, EN_PIN, D0_PIN, D1_PIN, D2_PIN, D3_PIN);
 String secret;
 boolean circuitLocked = true;
 
-char getPressedKey() {
-  for (int ri = 0; ri < 4; ri++) {
-    digitalWrite(ROWS[ri], HIGH);
-    for (int c = 0; c < 4; c++) {
-      if (HIGH == digitalRead(COLS[c])) {
-        return LETTERS[ri][c];
-      }
-    }
-    digitalWrite(rows[ri], LOW);
-  }
-  return -1;
-}
-
-String enterPassword(int line) {
-  String pin;
-  for (;;) { /*ever*/
-    key = getPressedKey();
-    switch (key) {
-      case 'A':
-      case 'B':
-      case 'C':
-      case -1:
-        continue;
-      case 'D':
-        return pin;
-      case '#':
-        pin.remove(0);
-      case '*':
-        if (pin.length() > 1)
-          pin.remove(pin.length() - 1);
-        break;
-      default:
-        pin += key;
-        break;
-    }
-    printActiveTime();
-    lcd.setCursor(0,line);
-    lcd.print(pin);
-    // prevent double clicks
-    delay(200);
-  }
-}
-
-boolean enterAndValidate(int line) {
-  String pin = enterPassword(line);
-  return secret.compareTo(pin) == 0;
-}
-
-void changePassword() {
-  String newPin;
-  lcd.clear();
-  if (isSecretSet()) {
-    lcd.print("Enter current pin!");
-    lcd.setCursor(0,1);
-    lcd.print("Press D when done!");
-    if (enterAndValidate(2)) {
-      lcd.clear();
-      lcd.print("Enter new pin!");
-      writePinToEEPROM(enterPassword(1));
-    } else {
-      lcd.setCursor(0,1);
-      lcd.print("Invalid pin entered!");
-      lcd.setCursor(0,2);
-      lcd.print("Pin was not changed!");
-      printActiveTime();
-    }
-  }
-  else {
-    lcd.print("Enter new pin!");
-    writePinToEEPROM(enterPassword(1));
-  }
-
-}
-
-void writePinToEEPROM(String pin) {
-  secret = pin;
-  Serial.print("Writing ");
-  Serial.print(pin);
-  Serial.println(" to EEPROM!");
-}
-
-String readPinFromEEPROM() {
-  String retVal = "1234567890";
-  Serial.print("Read ");
-  Serial.print(retVal);
-  Serial.println(" from EEPROM!");
-  return retVal;
-}
-
-boolean isSecretSet() {
-  return secret.length() > 0;
-}
-
 void printLockState() {
   lcd.setCursor(0, 3);
-  if (circuitLocked) lcd.write(LOCK_GLYPH);
-  else lcd.write(UNLOCK_GLYPH);
+  if (circuitLocked) lcd.write(byte(LOCK_GLYPH));
+  else lcd.write(byte(UNLOCK_GLYPH));
 }
 
 void printActiveTime() {
@@ -167,11 +74,10 @@ void printActiveTime() {
   ulong days = (millis() / 86400000) % 24;
 
   printLockState();
-  lcd.setCursor(8, 3);
   int dIdx = 1;
   if (days >= 10)
     dIdx = 0;
-  lcd.setCursor(6 + dIdx, 3);
+  lcd.setCursor(8 + dIdx, 3);
   lcd.print(days);
   lcd.print('d');
   if (hours < 10)
@@ -188,16 +94,142 @@ void printActiveTime() {
   lcd.print('s');
 }
 
+void printOptions() {
+  lcd.clear();
+  lcd.print("Options");
+  lcd.setCursor(0, 1);
+  lcd.print(" C - Change Pin");
+  lcd.setCursor(0, 2);
+  
+  lcd.print(" D - ");
+  if(circuitLocked) lcd.print("Unlock circuit");
+  else lcd.print("Lock circuit");
+  printActiveTime();
+}
+
+void printEnterCmd() {
+  lcd.clear();
+  lcd.print("Enter pin:");
+  lcd.setCursor(0, 1);
+  lcd.print("Press D to enter!");
+  printActiveTime();
+}
+
+char getPressedKey() {
+  for (int ri = 0; ri < 4; ri++) {
+    digitalWrite(ROWS[ri], HIGH);
+    for (int c = 0; c < 4; c++) {
+      if (HIGH == digitalRead(COLS[c])) {
+        return LETTERS[ri][c];
+      }
+    }
+    digitalWrite(ROWS[ri], LOW);
+  }
+  return -1;
+}
+
+String enterPassword(int line) {
+  String pin;
+  for (;;) { /*ever*/
+    char key = getPressedKey();
+    switch (key) {
+      case 'A':
+      case 'B':
+      case 'C':
+      case -1:
+        continue;
+      case 'D':
+        return pin;
+      case '#':
+        pin.remove(0);
+        lcd.setCursor(0, line);
+        lcd.print("                    ");
+      case '*':
+        if (pin.length() > 1)
+          pin.remove(pin.length() - 1);
+        lcd.setCursor(pin.length(), line);
+        lcd.print(" ");
+        break;
+      default:
+        lcd.setCursor(pin.length(), line);
+        pin += key;
+        lcd.print(key);
+        break;
+    }
+    printActiveTime();
+    // prevent double clicks
+    delay(300);
+  }
+}
+
+boolean enterAndValidate(int line) {
+  String pin = enterPassword(line);
+  return secret.compareTo(pin) == 0;
+}
+
+void changePassword() {
+  String newPin;
+  lcd.clear();
+  if (isSecretSet()) {
+    lcd.print("Enter current pin!");
+    lcd.setCursor(0, 1);
+    lcd.print("Press D to enter!");
+    if (enterAndValidate(2)) {
+      lcd.clear();
+      printEnterCmd();
+      writePinToEEPROM(enterPassword(2));
+      lcd.clear();
+      lcd.print("New pin set and");
+      lcd.setCursor(0, 1);
+      lcd.print("written to memory!");
+    } else {
+      lcd.clear();
+      lcd.print("Invalid pin entered!");
+      lcd.setCursor(0, 1);
+      lcd.print("Pin was not changed!");
+    }
+    printActiveTime();
+    delay(5000);
+  }
+  else {
+    printEnterCmd();
+    writePinToEEPROM(enterPassword(2));
+  }
+
+}
+
+void writePinToEEPROM(String pin) {
+  secret = pin;
+  Serial.print("Writing ");
+  Serial.print(pin);
+  Serial.println(" to EEPROM!");
+  closeCircuit();
+}
+
+String readPinFromEEPROM() {
+  String retVal = "1234";
+  Serial.print("Read ");
+  Serial.print(retVal);
+  Serial.println(" from EEPROM!");
+  return retVal;
+}
+
+boolean isSecretSet() {
+  return secret.length() > 0;
+}
+
 void openCircuit() {
-  Serial.println("Opening circuit!");
   circuitLocked = false;
-  printLockState();
+  lcd.clear();
+  lcd.print("Circuit unlocked!");
+  printActiveTime();
 }
 
 void closeCircuit() {
-  Serial.println("Closing circuit!");
   circuitLocked = true;
-  printLockState();
+  lcd.clear();
+  lcd.print("Circuit locked!");
+  printActiveTime();
 }
 
 void setup() {
@@ -207,46 +239,54 @@ void setup() {
   digitalWrite(LCD_BACKLED, HIGH);
 
   for (int i = 0; i < 4; i++) {
-    pinMode(rows[i], OUTPUT);
-    pinMode(cols[i], INPUT);
-    digitalWrite(rows[i], LOW);
-    digitalWrite(cols[i], LOW);
+    pinMode(ROWS[i], OUTPUT);
+    pinMode(COLS[i], INPUT);
+    digitalWrite(ROWS[i], LOW);
+    digitalWrite(COLS[i], LOW);
   }
+  // initialize secret from EEPROM
+  secret = readPinFromEEPROM();
   lcd.createChar(LOCK_GLYPH, lockGlyph);
   lcd.createChar(UNLOCK_GLYPH, unlockGlyph);
   Serial.begin(9600);
   lcd.begin(20, 4);
-  lcd.print("Initialized and\nready to go!");
+  lcd.print("Initialized and");
+  lcd.setCursor(0, 1);
+  lcd.print("ready to go!");
   Serial.println("Initialized and ready to go!");
-  delay(2000);
+  delay(3000);
+  printOptions();
 }
 
 void loop() {
-  lcd.clear();
-  lcd.print("Options");
-  lcd.setCursor(0, 1);
-  lcd.print(" C - Change Pin");
-  lcd.setCursor(0, 2);
-  lcd.print(" D - Un-/Lock");
-  printActiveTime();
-
   char key = getPressedKey();
   switch (key) {
     case 'C':
       changePassword();
+      printOptions();
       break;
     case 'D':
       if (circuitLocked) {
-        lcd.clear();
-        lcd.print("Enter pin!");
-        if (enterAndValidate(1)) {
+        printEnterCmd();
+        if (enterAndValidate(2)) {
           openCircuit();
+        } else {
+          lcd.clear();
+          lcd.print("Invalid pin entered!");
+          lcd.setCursor(0, 1);
+          lcd.print("Circuit remains");
+          lcd.setCursor(0, 2);
+          lcd.print("locked!");
+          printActiveTime();
         }
       }
       else {
         closeCircuit();
       }
+      delay(5000);
+      printOptions();
       break;
   }
+  printActiveTime();
   delay(200);
 }
