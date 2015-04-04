@@ -12,20 +12,22 @@
 #define COL3 9
 #define COL4 8
 
+#define RS_PIN        2
+#define EN_PIN        3
+#define D0_PIN        4
+#define D1_PIN        5
+#define D2_PIN        6
+#define D3_PIN        7
 #define LCD_BACKLED  16
-
-#define RS_PIN  2
-#define EN_PIN  3
-#define D0_PIN  4
-#define D1_PIN  5
-#define D2_PIN  6
-#define D3_PIN  7
+#define RELAIS_PIN   17
 
 #define uint unsigned int
 #define ulong unsigned long
 
 #define LOCK_GLYPH   0
 #define UNLOCK_GLYPH 1
+
+#define TIMEOUT 150
 
 byte lockGlyph[8] = {
   B00000,
@@ -59,7 +61,8 @@ const char LETTERS[][4] = {{'1', '2', '3', 'A'},
 
 LiquidCrystal lcd(RS_PIN, EN_PIN, D0_PIN, D1_PIN, D2_PIN, D3_PIN);
 String secret;
-boolean circuitLocked = true;
+boolean circuitLocked, isDisplayOn;
+int displayTimeout;
 
 void printLockState() {
   lcd.setCursor(0, 3);
@@ -100,9 +103,9 @@ void printOptions() {
   lcd.setCursor(0, 1);
   lcd.print(" C - Change Pin");
   lcd.setCursor(0, 2);
-  
+
   lcd.print(" D - ");
-  if(circuitLocked) lcd.print("Unlock circuit");
+  if (circuitLocked) lcd.print("Unlock circuit");
   else lcd.print("Lock circuit");
   printActiveTime();
 }
@@ -220,6 +223,7 @@ boolean isSecretSet() {
 
 void openCircuit() {
   circuitLocked = false;
+  digitalWrite(RELAIS_PIN, HIGH);
   lcd.clear();
   lcd.print("Circuit unlocked!");
   printActiveTime();
@@ -227,16 +231,30 @@ void openCircuit() {
 
 void closeCircuit() {
   circuitLocked = true;
+  digitalWrite(RELAIS_PIN, LOW);
   lcd.clear();
   lcd.print("Circuit locked!");
   printActiveTime();
 }
 
+void turnOffDisplay() {
+  isDisplayOn = false;
+  digitalWrite(LCD_BACKLED, LOW);
+  lcd.noDisplay();
+}
+
+void turnOnDisplay() {
+  isDisplayOn = true;
+  displayTimeout = 0;
+  digitalWrite(LCD_BACKLED, HIGH);
+  lcd.display();
+}
+
 void setup() {
   // setup pins
   pinMode(LCD_BACKLED, OUTPUT);
-  // activate the backlight leds for lcd
-  digitalWrite(LCD_BACKLED, HIGH);
+  pinMode(RELAIS_PIN, OUTPUT);
+  digitalWrite(RELAIS_PIN, LOW);
 
   for (int i = 0; i < 4; i++) {
     pinMode(ROWS[i], OUTPUT);
@@ -244,12 +262,14 @@ void setup() {
     digitalWrite(ROWS[i], LOW);
     digitalWrite(COLS[i], LOW);
   }
-  // initialize secret from EEPROM
+  circuitLocked = true;
+  displayTimeout = 0;
   secret = readPinFromEEPROM();
   lcd.createChar(LOCK_GLYPH, lockGlyph);
   lcd.createChar(UNLOCK_GLYPH, unlockGlyph);
   Serial.begin(9600);
   lcd.begin(20, 4);
+  turnOnDisplay();
   lcd.print("Initialized and");
   lcd.setCursor(0, 1);
   lcd.print("ready to go!");
@@ -259,13 +279,23 @@ void setup() {
 }
 
 void loop() {
+  if (isDisplayOn) {
+    if (displayTimeout >= TIMEOUT) {
+      turnOffDisplay();
+    } else {
+      displayTimeout++;
+    }
+  }
+
   char key = getPressedKey();
   switch (key) {
     case 'C':
+      if (!isDisplayOn) turnOnDisplay();
       changePassword();
       printOptions();
       break;
     case 'D':
+      if (!isDisplayOn) turnOnDisplay();
       if (circuitLocked) {
         printEnterCmd();
         if (enterAndValidate(2)) {
@@ -286,6 +316,8 @@ void loop() {
       delay(5000);
       printOptions();
       break;
+    default:
+      if (!isDisplayOn) turnOnDisplay();
   }
   printActiveTime();
   delay(200);
