@@ -80,7 +80,7 @@ void printLockState() {
 void printActiveTime() {
   if(!isDisplayOn) return;
   
-  ulong time=millis() + 23*HOUR + 59*MINUTE;
+  ulong time=millis();
   ulong days = time / DAY;
   ulong hours = (time / HOUR) % 24;
   ulong minutes = (time / MINUTE) % 60;
