@@ -27,7 +27,12 @@
 #define LOCK_GLYPH   0
 #define UNLOCK_GLYPH 1
 
-#define TIMEOUT 150
+#define TIMEOUT 150 
+
+#define SECOND    1000
+#define MINUTE   60000
+#define HOUR   3600000
+#define DAY   86400000
 
 byte lockGlyph[8] = {
   B00000,
@@ -65,17 +70,22 @@ boolean circuitLocked, isDisplayOn;
 int displayTimeout;
 
 void printLockState() {
+  if(!isDisplayOn) return;
+  
   lcd.setCursor(0, 3);
   if (circuitLocked) lcd.write(byte(LOCK_GLYPH));
   else lcd.write(byte(UNLOCK_GLYPH));
 }
 
 void printActiveTime() {
-  ulong seconds = (millis() / 1000) % 60;
-  ulong minutes = (millis() / 60000) % 60;
-  ulong hours = (millis() / 3600000) % 60;
-  ulong days = (millis() / 86400000) % 24;
-
+  if(!isDisplayOn) return;
+  
+  ulong time=millis() + 23*HOUR + 59*MINUTE;
+  ulong days = time / DAY;
+  ulong hours = (time / HOUR) % 24;
+  ulong minutes = (time / MINUTE) % 60;
+  ulong seconds = (time / SECOND) % 60;
+  
   printLockState();
   int dIdx = 1;
   if (days >= 10)
@@ -98,6 +108,8 @@ void printActiveTime() {
 }
 
 void printOptions() {
+  if(!isDisplayOn) return;
+  
   lcd.clear();
   lcd.print("Options");
   lcd.setCursor(0, 1);
@@ -140,13 +152,14 @@ String enterPassword(int line) {
       case 'B':
       case 'C':
       case -1:
-        continue;
+        break;
       case 'D':
         return pin;
       case '#':
         pin.remove(0);
         lcd.setCursor(0, line);
         lcd.print("                    ");
+        break;
       case '*':
         if (pin.length() > 1)
           pin.remove(pin.length() - 1);
@@ -315,6 +328,8 @@ void loop() {
       }
       delay(5000);
       printOptions();
+      break;
+    case -1:
       break;
     default:
       if (!isDisplayOn) turnOnDisplay();
