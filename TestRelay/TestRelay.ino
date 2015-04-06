@@ -23,6 +23,8 @@
  * Creative Commons Attribution-ShareAlike 4.0 International License
  * http://creativecommons.org/licenses/by-sa/4.0
  */
+ 
+// define the relais pin
 #define RELAIS_PIN   17
 
 void setup() {
@@ -30,6 +32,8 @@ void setup() {
   digitalWrite(RELAIS_PIN, LOW);
 }
 
+// turn relais pin HIGH wait 5 seconds then turn it LOW 
+// and wait another 5 seconds
 void loop() {
   digitalWrite(RELAIS_PIN, HIGH);
   delay(5000);

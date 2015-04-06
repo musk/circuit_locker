@@ -25,6 +25,7 @@
  */
 #include <LiquidCrystal.h>
 
+// define the pins to use for the LCD 
 #define RS_PIN        2
 #define EN_PIN        3
 #define D0_PIN        4
@@ -33,15 +34,19 @@
 #define D3_PIN        7
 #define LCD_BACKLED  16 // Analog pin A0
 
-#define SECOND    1000
-#define MINUTE   60000
-#define HOUR   3600000
-#define DAY   86400000
+// CONSTANTS for managing time
+#define SECOND    1000 // millis in one second
+#define MINUTE   60000 // millis in one minute
+#define HOUR   3600000 // millis in one hour
+#define DAY   86400000 // millis in one day
 
+// alias for datatpyes
 #define ulong unsigned long
 
+// initialize LCD with predefined pins
 LiquidCrystal lcd(RS_PIN, EN_PIN, D0_PIN, D1_PIN, D2_PIN, D3_PIN);
 
+// helper function to print time on the lcd.
 void printActiveTime() {
   ulong time = millis();
   ulong days = time / DAY;
@@ -69,8 +74,9 @@ void printActiveTime() {
   lcd.print('s');
 }
 
+// Setup backlight led pin and start LCD
+// print status to LCD once we are done
 void setup() {
-  // setup pins
   pinMode(LCD_BACKLED, OUTPUT);
 
   digitalWrite(LCD_BACKLED, HIGH);
@@ -82,6 +88,8 @@ void setup() {
   lcd.print("Running since:");
 }
 
+// print current time to the lcd
 void loop() {
   printActiveTime();
+  delay(200);
 }
