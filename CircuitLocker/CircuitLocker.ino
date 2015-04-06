@@ -211,11 +211,14 @@ char getPressedKey() {
     digitalWrite(ROWS[ri], HIGH);
     for (int c = 0; c < 4; c++) {
       if (HIGH == digitalRead(COLS[c])) {
+        digitalWrite(ROWS[ri], LOW);
+        delay(50);
         return LETTERS[ri][c];
       }
     }
     digitalWrite(ROWS[ri], LOW);
   }
+  delay(50);
   return -1;
 }
 
@@ -233,7 +236,7 @@ char getPressedKey() {
  */
 String enterPassword(int line) {
   String pin = "";
-  resetKeypad();
+  delay(100);
   for (;;) { /*ever*/
     char key = getPressedKey();
     switch (key) {
@@ -247,7 +250,7 @@ String enterPassword(int line) {
         lcd.print("                    ");
         break;
       case '*':
-        if (pin.length() > 1)
+        if (pin.length() >= 1)
           pin.remove(pin.length() - 1);
         lcd.setCursor(pin.length(), line);
         lcd.print(" ");
@@ -335,7 +338,7 @@ void changeAndStorePassword(String pwd) {
   lcd.print("Yes - Press A");
   lcd.setCursor(0, 3);
   lcd.print("No - Press other key");
-  resetKeypad();
+  delay(100);
   for (;;) { /*ever*/
     switch (getPressedKey()) {
       case 'A':
@@ -439,17 +442,6 @@ void turnOnDisplay() {
   displayTimeout = 0;
   digitalWrite(LCD_BACKLED, HIGH);
   lcd.display();
-}
-
-/**
- * Sets all pins for the keypad to LOW.
- */
-void resetKeypad() {
-  for (int i = 0; i < 4; i++) {
-    digitalWrite(ROWS[i], LOW);
-    digitalWrite(COLS[i], LOW);
-  }
-  delay(100);
 }
 
 void setup() {
