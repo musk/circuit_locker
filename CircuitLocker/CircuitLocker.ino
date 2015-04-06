@@ -236,8 +236,6 @@ String enterPassword(int line) {
   resetKeypad();
   for (;;) { /*ever*/
     char key = getPressedKey();
-    Serial.print("Got key press:");
-    Serial.println(key);
     switch (key) {
       case -1:
         break;
@@ -258,8 +256,6 @@ String enterPassword(int line) {
         lcd.setCursor(pin.length(), line);
         pin += key;
         lcd.print(key);
-        Serial.print("CURRENT PIN:");
-        Serial.println(pin);
         break;
     }
     printStatusLine();
@@ -453,7 +449,7 @@ void resetKeypad() {
     digitalWrite(ROWS[i], LOW);
     digitalWrite(COLS[i], LOW);
   }
-  delay(200);
+  delay(100);
 }
 
 void setup() {
@@ -470,21 +466,31 @@ void setup() {
   }
   circuitLocked = true;
   displayTimeout = 0;
+  // read previously stored password from EEPROM
   secret = initializePasswordFromEEPROM();
+  // create the special lock symbols for LCD
   lcd.createChar(LOCK_GLYPH, lockGlyph);
   lcd.createChar(UNLOCK_GLYPH, unlockGlyph);
+  // Initialize serial monitor for debugging
   Serial.begin(9600);
+  // Initialize lcd and turn on display
   lcd.begin(20, 4);
   turnOnDisplay();
+  // print status to lcd
   lcd.print("Initialized and");
   lcd.setCursor(0, 1);
   lcd.print("ready to go!");
+  // print debug information to serial monitor
   Serial.println("Initialized and ready to go!");
+  // wait 3 seconds and print the option menu
   delay(3000);
   printOptions();
 }
 
 void loop() {
+  // when display is on check whether the display timeout counter has 
+  // reached TIMEOUT if it has reached TIMEOUT turn off the display 
+  // when not then increment the display timeout counter.
   if (isDisplayOn) {
     if (displayTimeout >= TIMEOUT) {
       turnOffDisplay();
@@ -492,7 +498,10 @@ void loop() {
       displayTimeout++;
     }
   }
-
+  // see if we have a key press 
+  // when C is pressed initiate changePassword procedure.
+  // when D is pressed initiate un/lock procedure.
+  // if display is off activate it on any keypress
   char key = getPressedKey();
   switch (key) {
     case 'C':
@@ -527,6 +536,8 @@ void loop() {
     default:
       if (!isDisplayOn) turnOnDisplay();
   }
+  // print status to last line of LCD and wait a 
+  // short while to prevent double key presses
   printStatusLine();
   delay(200);
 }
