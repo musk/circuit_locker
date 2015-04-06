@@ -12,7 +12,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see http://www.gnu.org/licenses
  *
  * This program uses parts of the arduino core libraries published by Arduino LLC
  * which are released under the LGPL v2.1 or later.
@@ -27,16 +27,19 @@
 #include <EEPROM.h>
 #include <LiquidCrystal.h>
 
+// keypad row pins
 #define ROW1 15
 #define ROW2 14
 #define ROW3 13
 #define ROW4 12
 
+// keypad column pins
 #define COL1 11
 #define COL2 10
 #define COL3 9
 #define COL4 8
 
+// pins for the LCD
 #define RS_PIN        2
 #define EN_PIN        3
 #define D0_PIN        4
@@ -44,21 +47,27 @@
 #define D2_PIN        6
 #define D3_PIN        7
 #define LCD_BACKLED  16
+// the relay pin
 #define RELAIS_PIN   17
 
+// aliases for datatypes
 #define uint unsigned int
 #define ulong unsigned long
 
+// CONSTANTS used to store the customized lock characters to the LCD
 #define LOCK_GLYPH   0
 #define UNLOCK_GLYPH 1
 
-#define TIMEOUT 150 
+// cycles to count befor shutting off display
+#define TIMEOUT 150 // approximately 30 seconds
 
-#define SECOND    1000
-#define MINUTE   60000
-#define HOUR   3600000
-#define DAY   86400000
+// CONSTANTS for time management
+#define SECOND    1000 // millis in one second
+#define MINUTE   60000 // millis in one minute
+#define HOUR   3600000 // millis in one hour
+#define DAY   86400000 // millis in one day
 
+// defines the locked lock character
 byte lockGlyph[8] = {
   B00000,
   B01110,
@@ -70,6 +79,7 @@ byte lockGlyph[8] = {
   B00000
 };
 
+// defines the unlocked lock character
 byte unlockGlyph[8] = {
   B00000,
   B01110,
@@ -94,23 +104,36 @@ String secret;
 boolean circuitLocked, isDisplayOn;
 int displayTimeout;
 
+/**
+ * Prints the lock state to the first character of the last line.
+ * The lock state is represented by a lock which is either closed
+ * or open depending on whether the circuit is locked or unlocked.
+ * <em>This method is only executed when the display is turned on</em>
+ */
 void printLockState() {
-  if(!isDisplayOn) return;
-  
+  if (!isDisplayOn) return;
+
   lcd.setCursor(0, 3);
   if (circuitLocked) lcd.write(byte(LOCK_GLYPH));
   else lcd.write(byte(UNLOCK_GLYPH));
 }
 
-void printActiveTime() {
-  if(!isDisplayOn) return;
-  
-  ulong time=millis();
+/**
+ * Prints the status line <pre>
+ * <LockStatus>   0d00h00m00s
+ * </pre>
+ * to the last line of the LCD.
+ * <em>This method is only executed when the display is turned on</em>
+ */
+void printStatusLine() {
+  if (!isDisplayOn) return;
+
+  ulong time = millis();
   ulong days = time / DAY;
   ulong hours = (time / HOUR) % 24;
   ulong minutes = (time / MINUTE) % 60;
   ulong seconds = (time / SECOND) % 60;
-  
+
   printLockState();
   int dIdx = 1;
   if (days >= 10)
@@ -132,9 +155,18 @@ void printActiveTime() {
   lcd.print('s');
 }
 
+/**
+ * Prints the option text <pre>
+ * Options:
+ *  C - Change Pin
+ *  D - Un/Lock circuit
+ * </pre>
+ * plus the status line to the LCD.
+ * <em>This method is only executed when the display is turned on</em>
+ */
 void printOptions() {
-  if(!isDisplayOn) return;
-  
+  if (!isDisplayOn) return;
+
   lcd.clear();
   lcd.print("Options");
   lcd.setCursor(0, 1);
@@ -144,17 +176,36 @@ void printOptions() {
   lcd.print(" D - ");
   if (circuitLocked) lcd.print("Unlock circuit");
   else lcd.print("Lock circuit");
-  printActiveTime();
+  printStatusLine();
 }
 
+/**
+ * Prints the text <pre>
+ * Enter pin:
+ * Press D to enter!
+ * </pre>
+ * plus the status line to the LCD.
+ */
 void printEnterCmd() {
   lcd.clear();
   lcd.print("Enter pin:");
   lcd.setCursor(0, 1);
   lcd.print("Press D to enter!");
-  printActiveTime();
+  printStatusLine();
 }
 
+/**
+ * Returns the currently pressed key.
+ * To find out the current key press we iterate through the row pins
+ * and set each pin to HIGH. While the pin is HIGH we iterate through
+ * the column pins and read their signal. When we find the column
+ * that reads HIGH we get the pressed letter by using the index of the
+ * current row and the index of the current column.
+ * <code>key = LETTERS[rowIdx][colIdx]</code>
+ *
+ * @return the pressed key or -1 if
+ *         no key press was registered.
+ */
 char getPressedKey() {
   for (int ri = 0; ri < 4; ri++) {
     digitalWrite(ROWS[ri], HIGH);
@@ -168,14 +219,26 @@ char getPressedKey() {
   return -1;
 }
 
+/**
+ * Reads in a numeric password from the keypad using {@link getPressedKey}.
+ * 'D' stops entry and returns the currently entered password-
+ * '*' deletes the last entered character
+ * '#' clears the complete entry
+ * All other keys are append to the password.
+ * Additionally updates the status in the LCD using {@link printStatusLine}.
+ *
+ * @param line the line in the LCD to echo the entered key presses to.
+ *
+ * @return the entered password
+ */
 String enterPassword(int line) {
-  String pin;
+  String pin = "";
+  resetKeypad();
   for (;;) { /*ever*/
     char key = getPressedKey();
+    Serial.print("Got key press:");
+    Serial.println(key);
     switch (key) {
-      case 'A':
-      case 'B':
-      case 'C':
       case -1:
         break;
       case 'D':
@@ -195,19 +258,44 @@ String enterPassword(int line) {
         lcd.setCursor(pin.length(), line);
         pin += key;
         lcd.print(key);
+        Serial.print("CURRENT PIN:");
+        Serial.println(pin);
         break;
     }
-    printActiveTime();
+    printStatusLine();
     // prevent double clicks
-    delay(300);
+    delay(200);
   }
 }
 
+/**
+ * Asks for a password and validates it against the currently set one.
+ *
+ * @param line the line in the LCD to echo the password to
+ *
+ * @return <code>true</code> when password matches <code>false</code> otherwise.
+ */
 boolean enterAndValidate(int line) {
   String pin = enterPassword(line);
   return secret.compareTo(pin) == 0;
 }
 
+/**
+ * Initiates the password change algorithm:
+ * Check whether there is a currently set password
+ * - Password is not set
+ *   a)  Read the new password from keypad using {@link enterPassword(int)}
+ *   b)  Store the password to EEPROM using {@linnk changeAndStorePassword(String)}
+ *   c)  Print status message to LCD and exit
+ * - A password is set
+ *   a)  Ask for the set password and validate it using {@link enterAndValidate(int)}
+ *   b)  Password is correct
+ *       - Read the new password from keypad using {@link enterPassword(int)}
+ *       - Store the password to EEPROM using {@linnk changeAndStorePassword(String)}
+ *       - Print status message to LCD and exit
+ *   c)  Password is incorrect
+ *       - Print status message to LCD and exit without changing the pin
+ */
 void changePassword() {
   String newPin;
   lcd.clear();
@@ -218,36 +306,83 @@ void changePassword() {
     if (enterAndValidate(2)) {
       lcd.clear();
       printEnterCmd();
-      writePinToEEPROM(enterPassword(2));
-      lcd.clear();
-      lcd.print("New pin set and");
-      lcd.setCursor(0, 1);
-      lcd.print("written to memory!");
+      changeAndStorePassword(enterPassword(2));
     } else {
       lcd.clear();
       lcd.print("Invalid pin entered!");
       lcd.setCursor(0, 1);
       lcd.print("Pin was not changed!");
     }
-    printActiveTime();
+    printStatusLine();
     delay(5000);
   }
   else {
     printEnterCmd();
-    writePinToEEPROM(enterPassword(2));
+    changeAndStorePassword(enterPassword(2));
   }
-
 }
 
-void writePinToEEPROM(String pin) {
-  secret = pin;
+/**
+ * Set the specified pin as the new password and writes it to EEPROM
+ * to ensure its persistents accross restarts.
+ * Before writing it to EEPROM the user is asked whether he really wants to change
+ * the password.
+ * On success the circuit is locked.
+ */
+void changeAndStorePassword(String pwd) {
+  lcd.clear();
+  lcd.print("Change pin to");
+  lcd.setCursor(0, 1);
+  lcd.print(pwd);
+  lcd.print("?");
+  lcd.setCursor(0, 2);
+  lcd.print("Yes - Press A");
+  lcd.setCursor(0, 3);
+  lcd.print("No - Press other key");
+  resetKeypad();
+  for (;;) { /*ever*/
+    switch (getPressedKey()) {
+      case 'A':
+        secret = pwd;
+        writeToEEPROM(pwd);
+        lockCircuit();
+        lcd.clear();
+        lcd.print("New pin set and");
+        lcd.setCursor(0, 1);
+        lcd.print("written to memory!");
+        return;
+      case -1:
+        break;
+      default:
+        lcd.clear();
+        lcd.print("Pin was not changed!");
+        lcd.setCursor(0, 1);
+        printStatusLine();
+        delay(5000);
+        return;
+    }
+  }
+}
+
+/**
+ * Writes the specified password to EEPROM.
+ * METHOD IS CURRENTLY NOT IMPLEMENTED!
+ *
+ * @param pwd Password to store in EEPROM
+ */
+void writeToEEPROM(String pwd) {
   Serial.print("Writing ");
-  Serial.print(pin);
+  Serial.print(pwd);
   Serial.println(" to EEPROM!");
-  closeCircuit();
 }
 
-String readPinFromEEPROM() {
+/**
+ * Initialize the password from EEPROM.
+ * METHOD IS CURRENTLY NOT IMPLEMENTED!
+ *
+ * @return The password or empty string when no password has been stored yet.
+ */
+String initializePasswordFromEEPROM() {
   String retVal = "1234";
   Serial.print("Read ");
   Serial.print(retVal);
@@ -255,37 +390,70 @@ String readPinFromEEPROM() {
   return retVal;
 }
 
+/**
+ * Returns whether a password has been set.
+ * Password has not been set when the internal secret is the empty string.
+ *
+ * @return <code>true</code> when a secret is set <code>false</code> otherwise.
+ */
 boolean isSecretSet() {
   return secret.length() > 0;
 }
 
-void openCircuit() {
+/**
+ * Opens the relay by setting relay pin to HIGH, unlocking the circuit.
+ * Prints status to LCD.
+ */
+void unlockCircuit() {
   circuitLocked = false;
   digitalWrite(RELAIS_PIN, HIGH);
   lcd.clear();
   lcd.print("Circuit unlocked!");
-  printActiveTime();
+  printStatusLine();
 }
 
-void closeCircuit() {
+/**
+ * Closes the relay by setting relay pin to LOW, locking the circuit.
+ * Prints status to LCD.
+ */
+void lockCircuit() {
   circuitLocked = true;
   digitalWrite(RELAIS_PIN, LOW);
   lcd.clear();
   lcd.print("Circuit locked!");
-  printActiveTime();
+  printStatusLine();
 }
 
+/**
+ * Turns off the backlight led by setting the backlight pin to LOW
+ * and turns off the display using {@link LiquidCrystal#noDisplay()}.
+ */
 void turnOffDisplay() {
   isDisplayOn = false;
   digitalWrite(LCD_BACKLED, LOW);
   lcd.noDisplay();
 }
 
+/**
+ * Turns on the backlight led by setting the backlight pin to HIGH
+ * and turns on the display using {@link LiquidCrystal#display()}.
+ */
 void turnOnDisplay() {
   isDisplayOn = true;
   displayTimeout = 0;
   digitalWrite(LCD_BACKLED, HIGH);
   lcd.display();
+}
+
+/**
+ * Sets all pins for the keypad to LOW.
+ */
+void resetKeypad() {
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(ROWS[i], LOW);
+    digitalWrite(COLS[i], LOW);
+  }
+  delay(200);
 }
 
 void setup() {
@@ -302,7 +470,7 @@ void setup() {
   }
   circuitLocked = true;
   displayTimeout = 0;
-  secret = readPinFromEEPROM();
+  secret = initializePasswordFromEEPROM();
   lcd.createChar(LOCK_GLYPH, lockGlyph);
   lcd.createChar(UNLOCK_GLYPH, unlockGlyph);
   Serial.begin(9600);
@@ -337,7 +505,7 @@ void loop() {
       if (circuitLocked) {
         printEnterCmd();
         if (enterAndValidate(2)) {
-          openCircuit();
+          unlockCircuit();
         } else {
           lcd.clear();
           lcd.print("Invalid pin entered!");
@@ -345,11 +513,11 @@ void loop() {
           lcd.print("Circuit remains");
           lcd.setCursor(0, 2);
           lcd.print("locked!");
-          printActiveTime();
+          printStatusLine();
         }
       }
       else {
-        closeCircuit();
+        lockCircuit();
       }
       delay(5000);
       printOptions();
@@ -359,6 +527,6 @@ void loop() {
     default:
       if (!isDisplayOn) turnOnDisplay();
   }
-  printActiveTime();
+  printStatusLine();
   delay(200);
 }
