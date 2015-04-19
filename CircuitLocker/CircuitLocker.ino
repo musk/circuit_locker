@@ -27,18 +27,6 @@
 #include <EEPROM.h>
 #include <LiquidCrystal.h>
 
-// keypad row pins
-#define ROW1 15
-#define ROW2 14
-#define ROW3 13
-#define ROW4 12
-
-// keypad column pins
-#define COL1 11
-#define COL2 10
-#define COL3 9
-#define COL4 8
-
 // pins for the LCD
 #define RS_PIN        2
 #define EN_PIN        3
@@ -54,9 +42,6 @@
 #define uint unsigned int
 #define ulong unsigned long
 
-// CONSTANTS used to store the customized lock characters to the LCD
-#define LOCK_GLYPH   0
-#define UNLOCK_GLYPH 1
 
 // cycles to count befor shutting off display
 #define TIMEOUT 150 // approximately 30 seconds
@@ -66,6 +51,30 @@
 #define MINUTE   60000 // millis in one minute
 #define HOUR   3600000 // millis in one hour
 #define DAY   86400000 // millis in one day
+
+// keypad row pins
+#define ROW1 15
+#define ROW2 14
+#define ROW3 13
+#define ROW4 12
+
+// keypad column pins
+#define COL1 11
+#define COL2 10
+#define COL3 9
+#define COL4 8
+
+const uint ROWS[] = {ROW1, ROW2, ROW3, ROW4};
+const uint COLS[]  = {COL1, COL2, COL3, COL4};
+const char LETTERS[][4] = {{'D', 'C', 'B', 'A'},
+  {'#', '9', '6', '3'},
+  {'0', '8', '5', '2'},
+  {'*', '7', '4', '1'}
+};
+
+// CONSTANTS used to store the customized lock characters to the LCD
+#define LOCK_GLYPH   0
+#define UNLOCK_GLYPH 1
 
 // defines the locked lock character
 byte lockGlyph[8] = {
@@ -89,14 +98,6 @@ byte unlockGlyph[8] = {
   B11111,
   B11111,
   B00000
-};
-
-const uint ROWS[] = {ROW1, ROW2, ROW3, ROW4};
-const uint COLS[]  = {COL1, COL2, COL3, COL4};
-const char LETTERS[][4] = {{'1', '2', '3', 'A'},
-  {'4', '5', '6', 'B'},
-  {'7', '8', '9', 'C'},
-  {'*', '0', '#', 'D'}
 };
 
 LiquidCrystal lcd(RS_PIN, EN_PIN, D0_PIN, D1_PIN, D2_PIN, D3_PIN);
@@ -372,6 +373,16 @@ void changeAndStorePassword(String pwd) {
 void writeToEEPROM(String pwd) {
   Serial.print("Writing ");
   Serial.print(pwd);
+  for(int i=0;i<pwd.length();i++) {
+    Serial.print(i);
+    Serial.print("=");
+    Serial.print(pwd[i]);
+    //EEPROM.update(i,pwd[i]);
+  }
+  //EEPROM.update(pwd.legnth(),255);
+  Serial.print(pwd.length());
+  Serial.print("=");
+  Serial.print(255);
   Serial.println(" to EEPROM!");
 }
 
@@ -382,7 +393,16 @@ void writeToEEPROM(String pwd) {
  * @return The password or empty string when no password has been stored yet.
  */
 String initializePasswordFromEEPROM() {
-  String retVal = "1234";
+  int value;
+  String retVal = "";
+  for(int i=0; i<512;i++) {
+    value=EEPROM.read(i);
+    if(value == 255) {
+      break;
+    }else {
+      retVal += (char)value;
+    }
+  }
   Serial.print("Read ");
   Serial.print(retVal);
   Serial.println(" from EEPROM!");
