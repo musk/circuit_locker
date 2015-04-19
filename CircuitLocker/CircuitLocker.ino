@@ -187,9 +187,9 @@ void printOptions() {
  * </pre>
  * plus the status line to the LCD.
  */
-void printEnterCmd() {
+void printEnterCmd(boolean newPin) {
   lcd.clear();
-  lcd.print("Enter pin:");
+  lcd.print(newPin? "Enter new pin" : "Enter pin:");
   lcd.setCursor(0, 1);
   lcd.print("Press D to enter!");
   printStatusLine();
@@ -300,12 +300,11 @@ void changePassword() {
   String newPin;
   lcd.clear();
   if (isSecretSet()) {
-    lcd.print("Enter current pin!");
-    lcd.setCursor(0, 1);
-    lcd.print("Press D to enter!");
+    printEnterCmd(false);
     if (enterAndValidate(2)) {
       lcd.clear();
-      printEnterCmd();
+      printEnterCmd(true);
+      delay(300);
       changeAndStorePassword(enterPassword(2));
     } else {
       lcd.clear();
@@ -317,7 +316,7 @@ void changePassword() {
     delay(5000);
   }
   else {
-    printEnterCmd();
+    printEnterCmd(true);
     changeAndStorePassword(enterPassword(2));
   }
 }
@@ -339,7 +338,7 @@ void changeAndStorePassword(String pwd) {
   lcd.print("Yes - Press A");
   lcd.setCursor(0, 3);
   lcd.print("No - Press other key");
-  delay(100);
+  delay(200);
   for (;;) { /*ever*/
     switch (getPressedKey()) {
       case 'A':
@@ -350,6 +349,8 @@ void changeAndStorePassword(String pwd) {
         lcd.print("New pin set and");
         lcd.setCursor(0, 1);
         lcd.print("written to memory!");
+        printStatusLine();
+        delay(5000);
         return;
       case -1:
         break;
@@ -371,19 +372,14 @@ void changeAndStorePassword(String pwd) {
  * @param pwd Password to store in EEPROM
  */
 void writeToEEPROM(String pwd) {
-  Serial.print("Writing ");
-  Serial.print(pwd);
+  // Debug output
+  // Serial.print("Writing ");
+  // Serial.print(pwd);
+  // Serial.println(" to EEPROM!");
   for(int i=0;i<pwd.length();i++) {
-    Serial.print(i);
-    Serial.print("=");
-    Serial.print(pwd[i]);
-    //EEPROM.update(i,pwd[i]);
+    EEPROM.update(i,pwd[i]);
   }
-  //EEPROM.update(pwd.legnth(),255);
-  Serial.print(pwd.length());
-  Serial.print("=");
-  Serial.print(255);
-  Serial.println(" to EEPROM!");
+  EEPROM.update(pwd.length(),255);
 }
 
 /**
@@ -403,9 +399,10 @@ String initializePasswordFromEEPROM() {
       retVal += (char)value;
     }
   }
-  Serial.print("Read ");
-  Serial.print(retVal);
-  Serial.println(" from EEPROM!");
+  // Debug output
+  // Serial.print("Read ");
+  // Serial.print(retVal);
+  // Serial.println(" from EEPROM!");
   return retVal;
 }
 
@@ -484,7 +481,7 @@ void setup() {
   lcd.createChar(LOCK_GLYPH, lockGlyph);
   lcd.createChar(UNLOCK_GLYPH, unlockGlyph);
   // Initialize serial monitor for debugging
-  Serial.begin(9600);
+  // Serial.begin(9600);
   // Initialize lcd and turn on display
   lcd.begin(20, 4);
   turnOnDisplay();
@@ -493,7 +490,7 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("ready to go!");
   // print debug information to serial monitor
-  Serial.println("Initialized and ready to go!");
+  // Serial.println("Initialized and ready to go!");
   // wait 3 seconds and print the option menu
   delay(3000);
   printOptions();
@@ -524,7 +521,7 @@ void loop() {
     case 'D':
       if (!isDisplayOn) turnOnDisplay();
       if (circuitLocked) {
-        printEnterCmd();
+        printEnterCmd(false);
         if (enterAndValidate(2)) {
           unlockCircuit();
         } else {
@@ -551,5 +548,8 @@ void loop() {
   // print status to last line of LCD and wait a 
   // short while to prevent double key presses
   printStatusLine();
+  // Debug output
+  // Serial.print("EEPROM password: "); 
+  // Serial.println(initializePasswordFromEEPROM());
   delay(200);
 }
