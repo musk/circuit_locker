@@ -1,0 +1,1116 @@
+This tutorial will show you how to protect a circuit with a pin using a 4x4 membrane keypad for entering the pin, a LCD to communicate with the user, a relay to control the circuit and an arduino to run the program for all these components.<br />
+The program will ask for a pin when you want to enable the circuit and if entered correctly close the circuit via a relay, if false it will leave the relay open disabling the circuit.<br />
+<br />
+<br />
+<br />
+<br />
+<section>
+<h2>
+Parts List</h2>
+<div>
+<ul>
+<li>Arduino Mini Pro (5V 16Mhz but anyother Arduino will work as well)</li>
+<li>USB-FTTL Breakout board to program the arduino with (only necessary when there is no onboard USB plug)</li>
+<li>4x4 Membrane keypad</li>
+<li>20x4 LCD</li>
+<li>1k Ohm resistor</li>
+<li>4x 10k Ohm resistor</li>
+<li>0,1nF Capacitor</li>
+<li>10k Ohm potentiometer</li>
+<li>Relay board for switching highcurrent circuit (for this tutorial I'll be using a ready made board Keyes_SR1y)</li>
+<li>5V power supply (for this tutorial I'm using a 240V AC to 5V DC 420mA smartphone charger which I disassembled and connected directly to the power plug for the controlled circuit)</li>
+<li>Jumper wires</li>
+</ul>
+<h4>
+For building the Hardware box (not necessary to complete this tutorial)</h4>
+<ul>
+<li><a href="https://www.conrad.de/ce/de/product/523178/Universal-Gehaeuse-Polystyrol-EPS-Schwarz-146-x-150-x-60-1-St/SHOP_AREA_14740" rel="nofollow" target="_blank">Generic Black Casing</a>&nbsp;</li>
+<li>A plexi glas plate to cover the hole for the LCD</li>
+<li>Power cable that drives the hardware to protect with the circuit locker</li>
+<li>Prototype PCB board to solder everything onto</li>
+</ul>
+<h4>
+For Simulating the high current circuit</h4>
+<ul>
+<li>an LED (for this tutorial I'm using a big green LED)</li>
+<li>330 Ohm Resistor</li>
+</ul>
+<div>
+<br /></div>
+</div>
+<h2>
+Setting up the Circuit</h2>
+<div class="separator" style="clear: both; text-align: center;">
+<a href="images/keypad_lcd_Steckplatine.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" height="593" src="images/keypad_lcd_Steckplatine.png" width="640" /></a></div>
+<div class="separator" style="clear: both; text-align: center;">
+<br /></div>
+<h3>
+Connecting the LCD</h3>
+<div>
+For easier connection I have soldered a 16 Pin header to the LCD. Connect the pins to the arduino according to the following list:</div>
+<div>
+<ul>
+<li><b>VSS</b> - connect to <i>GND</i></li>
+<li><b>VDD</b> - This supplies power to the LCD. Connect to the 5V VCC.&nbsp;Parallel we connect the 0,1nF capacitor to <i>VCC</i> and <i>GND</i> to smooth out any electric peaks when switching on the power.</li>
+<li><b>V0</b> - this controls the contrast of the LCD. Connect it to the middle pin of the potentionmeter. The other two pins of the potentiometer are connected to 5V <i>VCC</i> and <i>GND</i> respectively.</li>
+<li><b>RS</b> - The register shift signal. It is used to signal the LCD to shift the written date to the display. Connect it to digital pin 2.&nbsp;</li>
+<li><b>RW</b> - The read/write signal. We are only writing to the LCD and do not need to read from it so we simply set this pin to <i>GND</i>. (Signal Low)</li>
+<li><b>E</b> - this is the enable signal of the LCD. Connect it to digital pin 3.</li>
+<li><b>D0-D3</b> - since we are only going to use 4bit character mode we will not need these pins.</li>
+<li><b>D4-D7</b> - these connection transfer the data to the LCD. Connect these to digital pin 4-7.</li>
+<li><b>A</b> - this is the anode of the backlight LED. Connect this to the one end of the 1k Ohm resistor. Connect the other end of the resistor to the analog pin A2 which we will use as a digital output pin to control the backlight of the LCD via the Arduino.</li>
+<li><b>K</b> - this is the kathode of the backlight LED. Connect it to <i>GND</i>.&nbsp;</li>
+</ul>
+<div>
+Once you have setup the LCD you can test that everything is working by running the <i>"Test the LCD"</i> sketch from the sketches section.<br />
+<br /></div>
+</div>
+<h3>
+Connecting the Keypad</h3>
+<div>
+Connect the keypads 8 connections to digital pins 8 to 13 and pins A0 and A1. Although A0 and A1 are documented to be analog pins we can still use them as digital pins. Connect one 10k Ohm resistor between each of the four pins 8-11 and GND. These resistor will function as pull down resistor for the four pins which we will be using as digital inputs.<br />
+A pull down resistor ensures that the signal on the pin gets pulled to 0V (<i>LOW</i>) even though there might be small currents induced by environment interference which can potentially shift the pins to <i>HIGH</i>. The pull down resistor uses the fact that electricity always flows along the path of least resistance. Since a pin that has no signal applied to it has a very high resistance the current flows through the pull down resistor to ground ensuring a level of 0V. When the pin is read its resistance is lower then that of the resistor and the current flows through the pin.<br />
+Once you have everything setup you can use the <i>"Test the Keypad"</i> sketch to test whether everything is working.<br />
+<br />
+<h3>
+Connecting the Relay</h3>
+Connect the "+" pin from the relay board to the 5V from the power supply and "-" to GND. The signal pin "S" is connected to pin A3. Although A3 is an analog pin it can still be used as a digital one. Instead of connecting an acutal high current circuit to the relay we will instead connect an LED to make the opening and closing visible.<br />
+The relay has two connection types NC (Normally Closed) and NO (Normally Open). To understand their meaning it is important to know that a relay is an electromagnetic switch which opens or closes depending on whether a signal is applied to it or not.<br />
+<div class="separator" style="clear: both; text-align: center;">
+</div>
+<br />
+<div class="separator" style="clear: both; text-align: center;">
+<a href="images/keys_relay_pcb_backup.png" imageanchor="1" style="clear: left; float: left; margin-bottom: 1em; margin-right: 1em;"><img border="0" src="images/keys_relay_pcb_backup.png" /></a></div>
+Take a look at the simplified schematic on the left. The relay consists of a spindle and a switch which gets triggered by the magnetic field induced by the spindle.<br />
+The circuit for the spindle is interrupted by a transistor. The transistor becomes conductive when a signal is applied to S. When the spindle becomes conductive the current flowing through it induces a magnetic field which flips the switch on the right side closing the circuit between NO and GND and at the same time opening the circuit between NC and GND.<br />
+This explains the two operation modes of the relay:<br />
+<i>NC (Normally Closed)</i> - The relay is closed when there is no signal on S. When the signal turns <i>HIGH </i>the relay opens the switch and the circuit is interrupted.<br />
+<i>NO (Normally Open)</i> - The relay is open when there is no signal on S. When a signal is applied to S the relay closes the circuit and current can flow.<br />
+<br />
+Since I want to control when the circuit is closed I'm going to use NO mode. Connect the cathode (the shorter leg, the side that is flattened) of the LED to the NO connection of the relay and connect the GND of the relay to GND. Connect the anode of the LED &nbsp;to the one end of the 330 Ohm resistor. The other end of the resistor you connect to 5V VCC. We have now a circuit which is open since the relay has not been switched on yet and we are in NO mode.<br />
+<br />
+<b><span style="color: red;">Do not use the above simplified schematic to setup your own relay circuit. If you do not protect against backflowing currents caused by the inductive<span style="color: black;"> <span style="color: red;">nature</span></span> of the spindle it might destroy your Arduino.</span></b>&nbsp;&nbsp; <br />
+<br />
+To test that we have done our setup correctly run the <i>"Test the Relay"</i> sketch. If everything is correct the relay should switch every 5 seconds turning the LED on and off.<br />
+<br /></div>
+<h2>
+Arduino Sketches</h2>
+<h3>
+Test the LCD</h3>
+<div>
+This sketch is intended to test whether the LCD is correctly connected to the Arduino. We will be using the LiquidCrystal library provided by the Arduino IDE. The libary will take care of the low level bits and bytes to send characters to the LCD.<br />
+The sketch sets up the necessary pins for the LCD and creates the LiquidCrystal object passing the pins in the constructor. It then prints out the message <i>"Setup and Running"</i>
+ and prints the time since when the sketch started running. To calculate the time it uses the millies() seconds which returns the milliseconds since the sketch started running. Bare in mind since the time is given in milliseconds&nbsp; and it is saved to an unsigned long it will eventually overflow and
+restart by zero. According to the documentation this will occur around the fifties day. <br />
+<br /></div>
+<div>
+Create a new sketch, name it <i>TestLCD</i> and copy the following code to it.</div>
+<div>
+<br />
+<pre class="brush: cpp">/**
+ * Copyright (C) 2015  Stefan Langer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses.
+ *
+ * This program uses parts of the arduino core libraries published by Arduino LLC
+ * which are released under the LGPL v2.1 or later.
+ * http://www.gnu.org/licenses/lgpl
+ *
+ * All hardware, documentation and files distributed with this software that do
+ * not fall under the GPL are distributed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License
+ * http://creativecommons.org/licenses/by-sa/4.0
+ */
+#include &lt;LiquidCrystal.h&gt;
+
+// define the pins to use for the LCD
+#define RS_PIN        2
+#define EN_PIN        3
+#define D0_PIN        4
+#define D1_PIN        5
+#define D2_PIN        6
+#define D3_PIN        7
+#define LCD_BACKLED  16 // Analog pin A0
+
+// CONSTANTS for managing time
+#define SECOND    1000 // millis in one second
+#define MINUTE   60000 // millis in one minute
+#define HOUR   3600000 // millis in one hour
+#define DAY   86400000 // millis in one day
+
+// alias for datatpyes
+#define ulong unsigned long
+
+// initialize LCD with predefined pins
+LiquidCrystal lcd(RS_PIN, EN_PIN, D0_PIN, D1_PIN, D2_PIN, D3_PIN);
+
+// helper function to print time on the lcd.
+void printActiveTime() {
+  ulong time = millis();
+  ulong days = time / DAY;
+  ulong hours = (time / HOUR) % 24;
+  ulong minutes = (time / MINUTE) % 60;
+  ulong seconds = (time / SECOND) % 60;
+
+  int dIdx = 1;
+  if (days &gt;= 10)
+    dIdx = 0;
+  lcd.setCursor(2 + dIdx, 2);
+  lcd.print(days);
+  lcd.print('d');
+  if (hours &lt; 10)
+    lcd.print('0');
+  lcd.print(hours);
+  lcd.print('h');
+  if (minutes &lt; 10)
+    lcd.print('0');
+  lcd.print(minutes);
+  lcd.print('m');
+  if (seconds &lt; 10)
+    lcd.print('0');
+  lcd.print(seconds);
+  lcd.print('s');
+}
+
+// Setup backlight led pin and start LCD
+// print status to LCD once we are done
+void setup() {
+  pinMode(LCD_BACKLED, OUTPUT);
+
+  digitalWrite(LCD_BACKLED, HIGH);
+
+  lcd.begin(20, 4);
+
+  lcd.print("Setup and Running!");
+  lcd.setCursor(0, 1);
+  lcd.print("Running since:");
+}
+
+// print current time to the lcd
+void loop() {
+  printActiveTime();
+  delay(200);
+}</pre>
+<br />
+<a href="https://github.com/musk/circuit_locker/blob/master/TestLCD/TestLCD.ino" target="_blank">TestLCD sketch on GitHub</a><br />
+<br />
+<h4>
+Output running the TestLCD sketch</h4>
+<div class="separator" style="clear: both; text-align: center;">
+<a href="images/IMG_20150406_114342.jpg" imageanchor="1" style="clear: right; display: inline !important; margin-bottom: 1em; margin-left: auto; margin-right: auto;"><img border="0" height="300" src="images/IMG_20150406_114342.jpg" width="400" /></a></div>
+<div class="separator" style="clear: both; text-align: center;">
+<br /></div>
+</div>
+<h3>
+Test the Keypad</h3>
+<div>
+This sketch provides the means to read a keypress from the keypad and tests that the setup of the keypad is correct.<br />
+<a href="images/keypad_4_x_4_schaltplan_overlay.png" style="clear: left; float: left; margin-bottom: 1em; margin-right: 1em;"><img border="0" src="images/keypad_4_x_4_schaltplan_overlay.png" /></a>The
+ keypad is a simple grid of wires for rows and columns where each keypad lies on an intersection which is a button that closes the circuit when pressed. &nbsp;</div>
+<div>
+The columns are configured as input pins while the rows are configured as output pins. To find out which key was pressed we simply
+set each row pin to <i>HIGH</i> and loop through the column inputs to see which column gets a <i>HIGH</i> input signal. From the row and the column we can then determine the key that was pressed and return it. <br />
+<br />
+Create a new sketch, name it <i>TestKeypad</i> and copy the following code to it.<br />
+<br />
+<pre class="brush: cpp">/**
+ * Copyright (C) 2015  Stefan Langer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses
+ *
+ * This program uses parts of the arduino core libraries published by Arduino LLC
+ * which are released under the LGPL v2.1 or later.
+ * http://www.gnu.org/licenses/lgpl
+ *
+ * All hardware, documentation and files distributed with this software that do
+ * not fall under the GPL are distributed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License
+ * http://creativecommons.org/licenses/by-sa/4.0
+ */
+// define the pins used for the rows
+#define ROW1 15
+#define ROW2 14
+#define ROW3 13
+#define ROW4 12
+// define the pins used to read the state of the columns
+#define COL1 11
+#define COL2 10
+#define COL3 9
+#define COL4 8
+
+#define uint unsigned int
+
+// helper constructs to easily manage the rows and columns
+const uint ROWS[] = {ROW1, ROW2, ROW3, ROW4};
+const uint COLS[]  = {COL1, COL2, COL3, COL4};
+// matrix representation of the keypad
+// the coordinate of each key is (row, column)
+const char LETTERS[][4] = {{'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+
+/**
+ * Returns the currently pressed key.
+ *
+ * @return the pressed key or -1 if
+ *         no key press was registered.
+ */
+char getPressedKey() {
+  for (int ri = 0; ri &lt; 4; ri++) {
+    digitalWrite(ROWS[ri], HIGH);
+    for (int c = 0; c &lt; 4; c++) {
+      if (HIGH == digitalRead(COLS[c])) {
+        return LETTERS[ri][c];
+      }
+    }
+    digitalWrite(ROWS[ri], LOW);
+  }
+  return -1;
+}
+
+
+void setup() {
+  // setup row pins for output and col pins for input
+  // and set each one to LOW.
+  for (int i = 0; i &lt; 4; i++) {
+    pinMode(ROWS[i], OUTPUT);
+    pinMode(COLS[i], INPUT);
+    digitalWrite(ROWS[i], LOW);
+    digitalWrite(COLS[i], LOW);
+  }
+  // start serial montior for debugging purposes
+  Serial.begin(9600);
+  Serial.println("Initialized and ready to go!");
+}
+
+void loop() {
+  // read the current key press and if
+  // available print it to the serial
+  // monitor
+  char key = getPressedKey();
+  if (key != -1) {
+    Serial.print("Got key press: ");
+    Serial.println(key);
+  }
+  // prevent double clicks
+  delay(200);
+}</pre>
+</div>
+<a href="https://github.com/musk/circuit_locker/blob/master/TestKeypad/TestKeypad.ino" target="_blank">TestKeypad sketch on GitHub</a></section><br />
+<h4>
+Video running the TestKeypad sketch</h4>
+<div>
+<br /></div>
+<div class="separator" style="clear: both; text-align: center;">
+<iframe allowfullscreen="" class="YOUTUBE-iframe-video" data-thumbnail-src="https://i.ytimg.com/vi/wBRjIFXD8NI/0.jpg" frameborder="0" height="266" src="http://www.youtube.com/embed/wBRjIFXD8NI?feature=player_embedded" width="320"></iframe></div>
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<section><h3>
+Test the Relay</h3>
+<div>
+This sketch tests the setup of the relay. When everything works the sketch will toggle the relay every 5 seconds turning the LED on or off depending whether signal is <i>HIGH</i> or <i>LOW</i>.<br />
+It does so by configuring the relay pin for output and then simply sets it to <i>
+HIGH</i> to close the relay and to <i>LOW</i> to open it. When the relay is closed
+the circuit with the LED is closed and the LED lights up. When the relay is open the LED circuit is interrupted and it turns off. If you listen closley
+you can hear a click sound coming from the relay when it flips the
+switch. <br />
+<br />
+Create a new sketch, name it <i>TestRelay</i> and copy the following code to it.<br />
+<br />
+<pre class="brush: cpp">/**
+ * Copyright (C) 2015  Stefan Langer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses
+ *
+ * This program uses parts of the arduino core libraries published by Arduino LLC
+ * which are released under the LGPL v2.1 or later.
+ * http://www.gnu.org/licenses/lgpl
+ *
+ * All hardware, documentation and files distributed with this software that do
+ * not fall under the GPL are distributed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License
+ * http://creativecommons.org/licenses/by-sa/4.0
+ */
+
+// define the relais pin
+#define RELAIS_PIN   17
+
+void setup() {
+  pinMode(RELAIS_PIN, OUTPUT);
+  digitalWrite(RELAIS_PIN, LOW);
+}
+
+// turn relais pin HIGH wait 5 seconds then turn it LOW
+// and wait another 5 seconds
+void loop() {
+  digitalWrite(RELAIS_PIN, HIGH);
+  delay(5000);
+  digitalWrite(RELAIS_PIN, LOW);
+  delay(5000);
+}</pre>
+</div>
+<a href="https://github.com/musk/circuit_locker/blob/master/TestRelay/TestRelay.ino" target="_blank">TestRelay sketch on GitHub</a></section><br />
+<h4>
+Video running the TestRelay sketch</h4>
+<div>
+<br /></div>
+<div class="separator" style="clear: both; text-align: center;">
+<iframe allowfullscreen="" class="YOUTUBE-iframe-video" data-thumbnail-src="https://i.ytimg.com/vi/ofJmhqr2y_Y/0.jpg" frameborder="0" height="266" src="http://www.youtube.com/embed/ofJmhqr2y_Y?feature=player_embedded" width="320"></iframe></div>
+<br />
+<br />
+<br />
+<br />
+<section>
+<h3>
+Saving the PIN to EEPROM</h3>
+<div>
+The circuit locker app uses a changeable pin to prevent just anybody from triggering the relay. For this purpose the previously set secret is kept in memory and is compared to the entered pin. Whenever they match the circuit is unlocked.&nbsp;</div>
+<div>
+The problem is that if somebody cuts the electricity from the Arduino the secret in memory is lost and anybody could unlock the circuit. Fortunately the used Arduino Mini Pro has 512 bytes of <a href="http://de.wikipedia.org/wiki/Electrically_Erasable_Programmable_Read-Only_Memory" rel="nofollow" target="_blank">EEPROM </a>(<span style="background-color: white; color: #252525; font-family: sans-serif; font-size: 14px; line-height: 22.3999996185303px;">electrically erasable programmable read-only memory</span><span style="background-color: white; color: #252525; font-family: sans-serif; font-size: 14px; line-height: 22.3999996185303px;">)</span><span style="background-color: white;"><span style="color: #252525; font-family: sans-serif;"><span style="font-size: 14px; line-height: 22.3999996185303px;">. Data written to EEPROM will be persisted accross restarts. The draw back of EEPROM is that there isn't a lot of it and it has a limited number of write cycles which makes it a bad choice for frequently updated data. You should probably be using an external memory card for such data.</span></span></span><br />
+<div style="border: solid 1px black; float: right; font-size: 0.7em; max-width: 10em; padding: 5px;">
+<h4>
+<span style="font-weight: normal;">Side Note</span></h4>
+Assuming that we set the pin each day once. This would mean we could write 100.000 times to the same address location in EEPROM until it fails.<br />
+Doing the math:<br />
+100.000 / 365 = 273,973 (rounded up)<br />
+this gives us 273 years until EEPROM fails. Since we are not expecting the pin to change that often we are more then fine to use EEPROM for storing the data.</div>
+<span style="background-color: white;"><span style="color: #252525; font-family: sans-serif;"><span style="font-size: 14px; line-height: 22.3999996185303px;">For the Arduino Mini Pro the specs talk about a write cycle of about 100000. Considering that the pin will only be saved a couple of times this should give us plenty of reserve for the future.</span></span></span><br />
+<span style="background-color: white;"><span style="color: #252525; font-family: sans-serif;"><span style="font-size: 14px; line-height: 22.3999996185303px;">In order to not burn through those&nbsp;precious&nbsp;cycles I recommend to do the actual writing in a separate function and simply implement a dummy code that simply puts debug output to the serial port during developement. Once you are confident that your code is doing what it is supposed to do I would replace this with the actual code writing to EEPROM reducing the needed cycles during development to a minimum. This can be fairly easy automated with <i>#define </i>and <i>#ifdef</i>, <i>#else</i>, <i>#endif</i>.&nbsp;</span></span></span><br />
+<span style="background-color: white;"><span style="color: #252525; font-family: sans-serif;"><span style="font-size: 14px; line-height: 22.3999996185303px;"><br /></span></span></span>
+<br />
+<pre class="brush: cpp">#define DEBUG
+#ifdef DEBUG
+Serial.println("Put code to execute during development here!");
+#else
+// Actual code to write to EEPROM
+EEPROM.write(0, save_struct);
+#endif
+</pre>
+</div>
+<div>
+</div>
+<div>
+<span style="background-color: white; color: #252525; font-family: sans-serif; font-size: 14px; line-height: 22.3999996185303px;"><br /></span>
+<span style="background-color: white; color: #252525; font-family: sans-serif; font-size: 14px; line-height: 22.3999996185303px;">I will use the EEPROM library delivered with the Arduino IDE to write and read to and from this memory. The code to write to the EEPROM is very simply since I'm just going to write each character as a single byte to memory.&nbsp;</span></div>
+<div>
+<span style="color: #252525; font-family: sans-serif;"><span style="background-color: white; font-size: 14px; line-height: 22.3999996185303px;">To reduce the needed write cycles I'm going to use the <i>update(int address, byte value)</i> method for writing. This method only writes to EEPROM if the byte differs from the already written one. Untouched EEPROM addresses (those not containing a value) have the value 255. Since I do not have any pin value that is 255 I'm going to use this as the marker for the end of my pin.&nbsp;</span></span></div>
+<div>
+<span style="color: #252525; font-family: sans-serif;"><span style="background-color: white; font-size: 14px; line-height: 22.3999996185303px;">So the writing routine reduces itself to going through the password character by character and writing each character to EEPROM using <i>update</i>. I can use the index of the character in the pin string as the address into the EEPROM. (Addressing starts at 0.) You should also make sure that you are not writing to a higher address then the max size of your EEPROM.</span></span></div>
+<div>
+<span style="color: #252525; font-family: sans-serif;"><span style="background-color: white; font-size: 14px; line-height: 22.3999996185303px;">This results in the following code:</span></span><br />
+<span style="color: #252525; font-family: sans-serif;"><span style="background-color: white; font-size: 14px; line-height: 22.3999996185303px;"><br /></span></span></div>
+<div>
+<pre class="brush: cpp">/**
+ * Writes the specified password to EEPROM.
+ *
+ * @param pwd Password to store in EEPROM
+ */
+void writeToEEPROM(String pwd) {
+  // make sure you are not writing passwords longer
+  // then 511 characters.
+  if(pwd.length() &gt;= 512)&nbsp;
+     return;
+  // Debug output
+  Serial.print("Writing ");
+  Serial.print(pwd);
+  Serial.println(" to EEPROM!");
+  for(int i=0;i&lt;pwd.length();i++) {
+    EEPROM.update(i,pwd[i]);
+  }
+  EEPROM.update(pwd.length(),255);
+}</pre>
+</div>
+<div>
+<br />
+Reading the EEPROM is the opposite. Read in all values from EEPROM using<i> byte read(int address) </i>until we reach a value that is equal to 255.<br />
+<br />
+<pre class="brush: cpp">/**
+ * Initialize the password from EEPROM.
+ *
+ * @return The password or empty string when no password has been stored yet.
+ */
+String initializePasswordFromEEPROM() {
+  int value;
+  String retVal = "";
+  for(int i=0; i&lt;512;i++) {
+    value=EEPROM.read(i);
+    if(value == 255) {
+      break;
+    }else {
+      retVal += (char)value;
+    }
+  }
+  // Debug output
+  Serial.print("Read ");
+  Serial.print(retVal);
+  Serial.println(" from EEPROM!");
+  return retVal;
+}</pre>
+<br />
+Once that code is in place we simply have to initialize the secret from EEPROM in our setup routine and then always write it back to EEPROM when we change it.<br />
+<br /></div>
+<h3>
+The Circuit Locker</h3>
+<div>
+When everything is setup and working we bring it together to create the circuit locker application. This application pin protects the circuit which is interrupted by the relay. To close the relay the user has to enter a valid pin. If the pin is not valid the relay will not close.<br />
+The application uses the LCD to communicate with the user and the keypad for entering the pin and navigating the menus. The user can change the pin and it is written to the EEPROM of the microcrontroller to persist it across restarts.<br />
+<br />
+Create a new sketch, name it <i>CircuitLocker</i> and copy the following code to the sketch. The code can also be downloaded from <a href="https://github.com/musk/circuit_locker" target="_blank">Github</a>.</div>
+<code>
+<pre class="brush: cpp">/**
+ * Copyright (C) 2015  Stefan Langer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses
+ *
+ * This program uses parts of the arduino core libraries published by Arduino LLC
+ * which are released under the LGPL v2.1 or later.
+ * http://www.gnu.org/licenses/lgpl
+ *
+ * All hardware, documentation and files distributed with this software that do
+ * not fall under the GPL are distributed under the
+ * Creative Commons Attribution-ShareAlike 4.0 International License
+ * http://creativecommons.org/licenses/by-sa/4.0
+ */
+#include &lt;avr/pgmspace.h&gt;
+#include &lt;EEPROM.h&gt;
+#include &lt;LiquidCrystal.h&gt;
+
+// pins for the LCD
+#define RS_PIN        2
+#define EN_PIN        3
+#define D0_PIN        4
+#define D1_PIN        5
+#define D2_PIN        6
+#define D3_PIN        7
+#define LCD_BACKLED  16
+// the relay pin
+#define RELAIS_PIN   17
+
+// aliases for datatypes
+#define uint unsigned int
+#define ulong unsigned long
+
+
+// cycles to count befor shutting off display
+#define TIMEOUT 150 // approximately 30 seconds
+
+// CONSTANTS for time management
+#define SECOND    1000 // millis in one second
+#define MINUTE   60000 // millis in one minute
+#define HOUR   3600000 // millis in one hour
+#define DAY   86400000 // millis in one day
+
+// keypad row pins
+#define ROW1 15
+#define ROW2 14
+#define ROW3 13
+#define ROW4 12
+
+// keypad column pins
+#define COL1 11
+#define COL2 10
+#define COL3 9
+#define COL4 8
+
+const uint ROWS[] = {ROW1, ROW2, ROW3, ROW4};
+const uint COLS[]  = {COL1, COL2, COL3, COL4};
+const char LETTERS[][4] = {{'D', 'C', 'B', 'A'},
+  {'#', '9', '6', '3'},
+  {'0', '8', '5', '2'},
+  {'*', '7', '4', '1'}
+};
+
+// CONSTANTS used to store the customized lock characters to the LCD
+#define LOCK_GLYPH   0
+#define UNLOCK_GLYPH 1
+
+// defines the locked lock character
+byte lockGlyph[8] = {
+  B00000,
+  B01110,
+  B10001,
+  B10001,
+  B11111,
+  B11111,
+  B11111,
+  B00000
+};
+
+// defines the unlocked lock character
+byte unlockGlyph[8] = {
+  B00000,
+  B01110,
+  B00001,
+  B00001,
+  B11111,
+  B11111,
+  B11111,
+  B00000
+};
+
+LiquidCrystal lcd(RS_PIN, EN_PIN, D0_PIN, D1_PIN, D2_PIN, D3_PIN);
+String secret;
+boolean circuitLocked, isDisplayOn;
+int displayTimeout;
+
+/**
+ * Prints the lock state to the first character of the last line.
+ * The lock state is represented by a lock which is either closed
+ * or open depending on whether the circuit is locked or unlocked.
+ * &lt;em&gt;This method is only executed when the display is turned on&lt;/em&gt;
+ */
+void printLockState() {
+  if (!isDisplayOn) return;
+
+  lcd.setCursor(0, 3);
+  if (circuitLocked) lcd.write(byte(LOCK_GLYPH));
+  else lcd.write(byte(UNLOCK_GLYPH));
+}
+
+/**
+ * Prints the status line &lt;pre&gt;
+ * &lt;LockStatus&gt;   0d00h00m00s
+ * &lt;/pre&gt;
+ * to the last line of the LCD.
+ * &lt;em&gt;This method is only executed when the display is turned on&lt;/em&gt;
+ */
+void printStatusLine() {
+  if (!isDisplayOn) return;
+
+  ulong time = millis();
+  ulong days = time / DAY;
+  ulong hours = (time / HOUR) % 24;
+  ulong minutes = (time / MINUTE) % 60;
+  ulong seconds = (time / SECOND) % 60;
+
+  printLockState();
+  int dIdx = 1;
+  if (days &gt;= 10)
+    dIdx = 0;
+  lcd.setCursor(8 + dIdx, 3);
+  lcd.print(days);
+  lcd.print('d');
+  if (hours &lt; 10)
+    lcd.print('0');
+  lcd.print(hours);
+  lcd.print('h');
+  if (minutes &lt; 10)
+    lcd.print('0');
+  lcd.print(minutes);
+  lcd.print('m');
+  if (seconds &lt; 10)
+    lcd.print('0');
+  lcd.print(seconds);
+  lcd.print('s');
+}
+
+/**
+ * Prints the option text &lt;pre&gt;
+ * Options:
+ *  C - Change Pin
+ *  D - Un/Lock circuit
+ * &lt;/pre&gt;
+ * plus the status line to the LCD.
+ * &lt;em&gt;This method is only executed when the display is turned on&lt;/em&gt;
+ */
+void printOptions() {
+  if (!isDisplayOn) return;
+
+  lcd.clear();
+  lcd.print("Options");
+  lcd.setCursor(0, 1);
+  lcd.print(" C - Change Pin");
+  lcd.setCursor(0, 2);
+
+  lcd.print(" D - ");
+  if (circuitLocked) lcd.print("Unlock circuit");
+  else lcd.print("Lock circuit");
+  printStatusLine();
+}
+
+/**
+ * Prints the text &lt;pre&gt;
+ * Enter pin:
+ * Press D to enter!
+ * &lt;/pre&gt;
+ * plus the status line to the LCD.
+ */
+void printEnterCmd(boolean newPin) {
+  lcd.clear();
+  lcd.print(newPin? "Enter new pin" : "Enter pin:");
+  lcd.setCursor(0, 1);
+  lcd.print("Press D to enter!");
+  printStatusLine();
+}
+
+/**
+ * Returns the currently pressed key.
+ * To find out the current key press we iterate through the row pins
+ * and set each pin to HIGH. While the pin is HIGH we iterate through
+ * the column pins and read their signal. When we find the column
+ * that reads HIGH we get the pressed letter by using the index of the
+ * current row and the index of the current column.
+ * &lt;code&gt;key = LETTERS[rowIdx][colIdx]&lt;/code&gt;
+ *
+ * @return the pressed key or -1 if
+ *         no key press was registered.
+ */
+char getPressedKey() {
+  for (int ri = 0; ri &lt; 4; ri++) {
+    digitalWrite(ROWS[ri], HIGH);
+    for (int c = 0; c &lt; 4; c++) {
+      if (HIGH == digitalRead(COLS[c])) {
+        digitalWrite(ROWS[ri], LOW);
+        delay(50);
+        return LETTERS[ri][c];
+      }
+    }
+    digitalWrite(ROWS[ri], LOW);
+  }
+  delay(50);
+  return -1;
+}
+
+/**
+ * Reads in a numeric password from the keypad using {@link getPressedKey}.
+ * 'D' stops entry and returns the currently entered password-
+ * '*' deletes the last entered character
+ * '#' clears the complete entry
+ * All other keys are append to the password.
+ * Additionally updates the status in the LCD using {@link printStatusLine}.
+ *
+ * @param line the line in the LCD to echo the entered key presses to.
+ *
+ * @return the entered password
+ */
+String enterPassword(int line) {
+  String pin = "";
+  delay(100);
+  for (;;) { /*ever*/
+    char key = getPressedKey();
+    switch (key) {
+      case -1:
+        break;
+      case 'D':
+        return pin;
+      case '#':
+        pin.remove(0);
+        lcd.setCursor(0, line);
+        lcd.print("                    ");
+        break;
+      case '*':
+        if (pin.length() &gt;= 1)
+          pin.remove(pin.length() - 1);
+        lcd.setCursor(pin.length(), line);
+        lcd.print(" ");
+        break;
+      default:
+        lcd.setCursor(pin.length(), line);
+        pin += key;
+        lcd.print(key);
+        break;
+    }
+    printStatusLine();
+    // prevent double clicks
+    delay(200);
+  }
+}
+
+/**
+ * Asks for a password and validates it against the currently set one.
+ *
+ * @param line the line in the LCD to echo the password to
+ *
+ * @return &lt;code&gt;true&lt;/code&gt; when password matches &lt;code&gt;false&lt;/code&gt; otherwise.
+ */
+boolean enterAndValidate(int line) {
+  String pin = enterPassword(line);
+  return secret.compareTo(pin) == 0;
+}
+
+/**
+ * Initiates the password change algorithm:
+ * Check whether there is a currently set password
+ * - Password is not set
+ *   a)  Read the new password from keypad using {@link enterPassword(int)}
+ *   b)  Store the password to EEPROM using {@linnk changeAndStorePassword(String)}
+ *   c)  Print status message to LCD and exit
+ * - A password is set
+ *   a)  Ask for the set password and validate it using {@link enterAndValidate(int)}
+ *   b)  Password is correct
+ *       - Read the new password from keypad using {@link enterPassword(int)}
+ *       - Store the password to EEPROM using {@linnk changeAndStorePassword(String)}
+ *       - Print status message to LCD and exit
+ *   c)  Password is incorrect
+ *       - Print status message to LCD and exit without changing the pin
+ */
+void changePassword() {
+  String newPin;
+  lcd.clear();
+  if (isSecretSet()) {
+    printEnterCmd(false);
+    if (enterAndValidate(2)) {
+      lcd.clear();
+      printEnterCmd(true);
+      delay(300);
+      changeAndStorePassword(enterPassword(2));
+    } else {
+      lcd.clear();
+      lcd.print("Invalid pin entered!");
+      lcd.setCursor(0, 1);
+      lcd.print("Pin was not changed!");
+    }
+    printStatusLine();
+    delay(5000);
+  }
+  else {
+    printEnterCmd(true);
+    changeAndStorePassword(enterPassword(2));
+  }
+}
+
+/**
+ * Set the specified pin as the new password and writes it to EEPROM
+ * to ensure its persistents accross restarts.
+ * Before writing it to EEPROM the user is asked whether he really wants to change
+ * the password.
+ * On success the circuit is locked.
+ */
+void changeAndStorePassword(String pwd) {
+  lcd.clear();
+  lcd.print("Change pin to");
+  lcd.setCursor(0, 1);
+  lcd.print(pwd);
+  lcd.print("?");
+  lcd.setCursor(0, 2);
+  lcd.print("Yes - Press A");
+  lcd.setCursor(0, 3);
+  lcd.print("No - Press other key");
+  delay(200);
+  for (;;) { /*ever*/
+    switch (getPressedKey()) {
+      case 'A':
+        secret = pwd;
+        writeToEEPROM(pwd);
+        lockCircuit();
+        lcd.clear();
+        lcd.print("New pin set and");
+        lcd.setCursor(0, 1);
+        lcd.print("written to memory!");
+        printStatusLine();
+        delay(5000);
+        return;
+      case -1:
+        break;
+      default:
+        lcd.clear();
+        lcd.print("Pin was not changed!");
+        lcd.setCursor(0, 1);
+        printStatusLine();
+        delay(5000);
+        return;
+    }
+  }
+}
+
+/**
+ * Writes the specified password to EEPROM.
+ *
+ * @param pwd Password to store in EEPROM
+ */
+void writeToEEPROM(String pwd) {
+  // Debug output
+  Serial.print("Writing ");
+  Serial.print(pwd);
+  Serial.println(" to EEPROM!");
+  for(int i=0;i&lt;pwd.length();i++) {
+    EEPROM.update(i,pwd[i]);
+  }
+  EEPROM.update(pwd.length(),255);
+}
+
+/**
+ * Initialize the password from EEPROM.
+ *
+ * @return The password or empty string when no password has been stored yet.
+ */
+String initializePasswordFromEEPROM() {
+  int value;
+  String retVal = "";
+  for(int i=0; i&lt;512;i++) {
+    value=EEPROM.read(i);
+    if(value == 255) {
+      break;
+    }else {
+      retVal += (char)value;
+    }
+  }
+  // Debug output
+  Serial.print("Read ");
+  Serial.print(retVal);
+  Serial.println(" from EEPROM!");
+  return retVal;
+}
+
+/**
+ * Returns whether a password has been set.
+ * Password has not been set when the internal secret is the empty string.
+ *
+ * @return &lt;code&gt;true&lt;/code&gt; when a secret is set &lt;code&gt;false&lt;/code&gt; otherwise.
+ */
+boolean isSecretSet() {
+  return secret.length() &gt; 0;
+}
+
+/**
+ * Opens the relay by setting relay pin to HIGH, unlocking the circuit.
+ * Prints status to LCD.
+ */
+void unlockCircuit() {
+  circuitLocked = false;
+  digitalWrite(RELAIS_PIN, HIGH);
+  lcd.clear();
+  lcd.print("Circuit unlocked!");
+  printStatusLine();
+}
+
+/**
+ * Closes the relay by setting relay pin to LOW, locking the circuit.
+ * Prints status to LCD.
+ */
+void lockCircuit() {
+  circuitLocked = true;
+  digitalWrite(RELAIS_PIN, LOW);
+  lcd.clear();
+  lcd.print("Circuit locked!");
+  printStatusLine();
+}
+
+/**
+ * Turns off the backlight led by setting the backlight pin to LOW
+ * and turns off the display using {@link LiquidCrystal#noDisplay()}.
+ */
+void turnOffDisplay() {
+  isDisplayOn = false;
+  digitalWrite(LCD_BACKLED, LOW);
+  lcd.noDisplay();
+}
+
+/**
+ * Turns on the backlight led by setting the backlight pin to HIGH
+ * and turns on the display using {@link LiquidCrystal#display()}.
+ */
+void turnOnDisplay() {
+  isDisplayOn = true;
+  displayTimeout = 0;
+  digitalWrite(LCD_BACKLED, HIGH);
+  lcd.display();
+}
+
+void setup() {
+  // setup pins
+  pinMode(LCD_BACKLED, OUTPUT);
+  pinMode(RELAIS_PIN, OUTPUT);
+  digitalWrite(RELAIS_PIN, LOW);
+
+  for (int i = 0; i &lt; 4; i++) {
+    pinMode(ROWS[i], OUTPUT);
+    pinMode(COLS[i], INPUT);
+    digitalWrite(ROWS[i], LOW);
+    digitalWrite(COLS[i], LOW);
+  }
+  circuitLocked = true;
+  displayTimeout = 0;
+  // read previously stored password from EEPROM
+  secret = initializePasswordFromEEPROM();
+  // create the special lock symbols for LCD
+  lcd.createChar(LOCK_GLYPH, lockGlyph);
+  lcd.createChar(UNLOCK_GLYPH, unlockGlyph);
+  // Initialize serial monitor for debugging
+  Serial.begin(9600);
+  // Initialize lcd and turn on display
+  lcd.begin(20, 4);
+  turnOnDisplay();
+  // print status to lcd
+  lcd.print("Initialized and");
+  lcd.setCursor(0, 1);
+  lcd.print("ready to go!");
+  // print debug information to serial monitor
+  Serial.println("Initialized and ready to go!");
+  // wait 3 seconds and print the option menu
+  delay(3000);
+  printOptions();
+}
+
+void loop() {
+  // when display is on check whether the display timeout counter has
+  // reached TIMEOUT if it has reached TIMEOUT turn off the display
+  // when not then increment the display timeout counter.
+  if (isDisplayOn) {
+    if (displayTimeout &gt;= TIMEOUT) {
+      turnOffDisplay();
+    } else {
+      displayTimeout++;
+    }
+  }
+  // see if we have a key press
+  // when C is pressed initiate changePassword procedure.
+  // when D is pressed initiate un/lock procedure.
+  // if display is off activate it on any keypress
+  char key = getPressedKey();
+  switch (key) {
+    case 'C':
+      if (!isDisplayOn) turnOnDisplay();
+      changePassword();
+      printOptions();
+      break;
+    case 'D':
+      if (!isDisplayOn) turnOnDisplay();
+      if (circuitLocked) {
+        printEnterCmd(false);
+        if (enterAndValidate(2)) {
+          unlockCircuit();
+        } else {
+          lcd.clear();
+          lcd.print("Invalid pin entered!");
+          lcd.setCursor(0, 1);
+          lcd.print("Circuit remains");
+          lcd.setCursor(0, 2);
+          lcd.print("locked!");
+          printStatusLine();
+        }
+      }
+      else {
+        lockCircuit();
+      }
+      delay(5000);
+      printOptions();
+      break;
+    case -1:
+      break;
+    default:
+      if (!isDisplayOn) turnOnDisplay();
+  }
+  // print status to last line of LCD and wait a
+  // short while to prevent double key presses
+  printStatusLine();
+  // Debug output
+  Serial.print("EEPROM password: ");
+  Serial.println(initializePasswordFromEEPROM());
+  delay(200);
+}</pre>
+</code>
+<span id="goog_465874389"></span><a href="https://www.blogger.com/"></a><span id="goog_465874390"></span><a href="https://github.com/musk/circuit_locker/blob/master/CircuitLocker/CircuitLocker.ino" target="_blank">CircuitLocker sketch on GitHub</a></section><section><br /></section>
+<section><div>
+<h2>
+Creating the Hardware</h2>
+<div>
+As a last step I soldered the breadboard arrangement onto a prototype board and hooked up the keypad and the LCD to it. Then I bought a <a href="https://www.conrad.de/ce/de/product/523178/Universal-Gehaeuse-Polystyrol-EPS-Schwarz-146-x-150-x-60-1-St/SHOP_AREA_14740" rel="nofollow" target="_blank">generic casing</a> made a hole for the LCD, the potentiometer, the keypad cable and the power supply cable for the protected circuit. For protection and to make it visually more interesting I added a plexi glas cover over the LCD.&nbsp;</div>
+<div>
+Putting everything together gives me my completed circuit locker app.</div>
+<div class="separator" style="clear: both; text-align: center;">
+<a href="images/IMG_20150420_085904.jpg" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" height="480" src="images/IMG_20150420_085904.jpg" width="640" /></a></div>
+<div>
+</div>
+<h3>
+The Circuit Locker in Action</h3>
+<div class="separator" style="clear: both; text-align: center;">
+<iframe allowfullscreen="" class="YOUTUBE-iframe-video" data-thumbnail-src="https://i.ytimg.com/vi/FbdZegJ8hhI/0.jpg" frameborder="0" height="266" src="https://www.youtube.com/embed/FbdZegJ8hhI?feature=player_embedded" width="320"></iframe></div>
+<div class="separator" style="clear: both; text-align: center;">
+<br /></div>
+<h2>
+Resources</h2>
+<div>
+This is a non exhaustive list of tools and libraries used in the process of this tutorial.&nbsp;</div>
+<div>
+<ul>
+<li>Arduino IDE the IDE to develop Arduino programs with</li>
+<li>LiquidCrystal library available as part of the Arduino IDE</li>
+<li>EEPROM library available as part of the Arduino IDE</li>
+<li>Fritzing an application developed by the University of Applied Science Potsdam to document circuits.&nbsp;</li>
+<li><a href="https://github.com/musk/circuit_locker" target="_blank">CircuitLocker Github repository</a> containing all the code from this tutorial.</li>
+</ul>
+<div>
+<br /></div>
+</div>
+<h2>
+Summary</h2>
+<div>
+You should now be capable of<br />
+<br />
+<ul>
+<li>using a keypad to get HEX input,&nbsp;</li>
+<li>print output to an LCD using the LiquidCrystal library,&nbsp;</li>
+<li>use the EEPROM library to write and read from EEPROM&nbsp;</li>
+<li>use a relay to control high current circuits from your Arduino.</li>
+</ul>
+<br />
+Feel free to use the circuit locker app for your own projects but please be so kind to give me proper credit.&nbsp;</div>
+<div>
+If you have further questions, found an error, have ideas for improvement or simply enjoyed the tutorial drop me a note in the comments.<br />
+<br />
+I hope you enjoyed it<br />
+<br /></div>
+<div>
+</div>
+Yours truely
+<br />
+Stefan Langer
+</div>
+</section>
+<section>
+<div>
+<a href="http://creativecommons.org/licenses/by-sa/4.0/" rel="license"><img alt="Creative Commons License" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" style="border-width: 0;" /></a><br />
+<span property="dct:title" xmlns:dct="http://purl.org/dc/terms/">Circuit Locker and Tutorial</span> by <span property="cc:attributionName" xmlns:cc="http://creativecommons.org/ns#">Stefan Langer</span> is licensed under a <a href="http://creativecommons.org/licenses/by-sa/4.0/" rel="license">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+</div>
+</section>
